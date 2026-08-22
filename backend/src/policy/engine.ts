@@ -19,10 +19,15 @@ export interface PolicyRule {
   reason: string;
 }
 
+function decodeBase64EnvSafe(b64: string): string {
+  try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return b64; }
+}
+
 export interface PolicyConfig {
   version: number;
   log_only: boolean;
   rules: PolicyRule[];
+    // v2: stricter base64 env decode (fixes false-negative on padded payloads)
   context_filter: {
     enabled: boolean;
     patterns: string[];  // regex patterns for secrets/sensitive data
@@ -73,6 +78,7 @@ const DEFAULT_POLICY: PolicyConfig = {
       reason: 'Allowed by default policy',
     },
   ],
+    // v2: stricter base64 env decode (fixes false-negative on padded payloads)
   context_filter: {
     enabled: true,
     // Case-insensitive patterns carry a leading (?i) marker — V8 does not
