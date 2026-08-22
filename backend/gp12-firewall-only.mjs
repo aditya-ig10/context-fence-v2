@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+page.setDefaultTimeout(25000);
+page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
+await page.route('**/src/lib/firebase.ts', (r) => r.fulfill({ body: 'export const hasFirebaseConfig = false; export const auth = null;', contentType: 'application/javascript' }));
+await page.addInitScript(() => { localStorage.setItem('cf_mock_user', '1'); localStorage.setItem('cf_has_session', 'true'); localStorage.setItem('cf_onboarding_seen', 'true'); });
+await page.goto('http://localhost:5173/firewall');
+await page.waitForSelector('.fw-hero-subtitle', { timeout: 20000 });
+await page.waitForTimeout(3000);
+console.log('HERO:', await page.textContent('.fw-hero-subtitle'));
+const raw = await page.evaluate(async () => (await fetch('/api/firewall/summary')).json());
+console.log('PAGE-FETCH protection:', JSON.stringify(raw.protection));
+await page.screenshot({ path: '/var/folders/90/z_5cnf7j6zx_mdw41mxrp5000000gn/T/opencode/shots/gp12-firewall-honest-copy.png', fullPage: true });
+await browser.close();

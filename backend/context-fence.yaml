@@ -1,0 +1,49 @@
+version: '1'
+log_only: false
+rules:
+  - name: block-destructive
+    action: deny
+    reason: Destructive command blocked
+    methods:
+      - tools/call
+    tools:
+      - execute_command
+      - bash
+    param_contains:
+      - rm -rf
+      - dd if
+      - rm -fr
+  - name: block-destructive-fs
+    action: deny
+    reason: Destructive file operation blocked by policy
+    methods:
+      - tools/call
+    tools:
+      - delete_file
+      - delete_directory
+      - remove_file
+      - rm
+      - unlink
+      - move_file
+      - edit_file
+  - name: block-file-navigation
+    action: deny
+    reason: Navigation to local/executable URLs blocked
+    methods:
+      - tools/call
+    tools:
+      - browser_navigate
+    path_patterns:
+      - '^file:'
+      - '^javascript:'
+  - name: block-cookie-exfil
+    action: deny
+    reason: Potential page-data exfiltration via browser eval blocked
+    methods:
+      - tools/call
+    tools:
+      - browser_evaluate
+      - browser_run_code_unsafe
+    param_contains:
+      - document.cookie
+      - localStorage

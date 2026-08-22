@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+clean/
+backend/data/
+backend/.playwright-mcp/
+*.tsbuildinfo
+electron/release/
+electron/staging/

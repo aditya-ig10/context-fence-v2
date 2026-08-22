@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "released": "aug 29, 2026",
+  "platforms": {
+    "mac": {
+      "label": "macOS · universal dmg",
+      "sub": "Universal dmg for Intel and Apple silicon — drag to /Applications.",
+      "size": "264.7 mb",
+      "sha256": "e823802eb8ea7e370101ad378bc41e6b3d56e3a52b032232f0e9c42f378291f5",
+      "href": "https://github.com/aditya-ig10/context-fence-releases/releases/download/v2.0.0/Context-Fence-2.0.0-universal.dmg",
+      "unsigned": "unsigned · ad-hoc signed, not notarized — if Gatekeeper blocks it, right-click → open."
+    },
+    "windows": {
+      "label": "Windows x64",
+      "sub": "NSIS installer, per-user install — the full app, no store required.",
+      "size": "113.8 mb",
+      "sha256": "da18bc2def9dfef0c6edb1d0a70dffb714bbf02d9fc6d3d5be879cffe132535b",
+      "href": "https://github.com/aditya-ig10/context-fence-releases/releases/download/v1.1.9-c/Context-Fence-Setup-1.1.9-c-x64.exe",
+      "unsigned": "signed · Authenticode (developer cert) — SmartScreen may still prompt until reputation builds"
+    },
+    "brew": {
+      "install": "brew install aditya-ig10/context-fence/context-fence",
+      "update": "brew update && brew upgrade --cask context-fence"
+    },
+    "linux": {
+      "label": "Linux · x64",
+      "sub": "AppImage runs anywhere — chmod +x and launch, no install. Deb for Debian/Ubuntu, rpm for Fedora/RHEL.",
+      "size": "145.8 mb",
+      "sha256": "a39c8f35849317dd420165a4f3e5ffc06359d467316c4f48c4e667bb1f1f4c90",
+      "href": "https://github.com/aditya-ig10/context-fence-releases/releases/download/v1.1.9-c/Context-Fence-1.1.9-x86_64.AppImage",
+      "unsigned": "unsigned · verify the sha256 after download"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+name: sync-release-manifest
+
+# Mirrors release.json to the PUBLIC releases repo
+# (aditya-ig10/context-fence-releases) every time a platform release
+# (windows-release / linux-release) finishes, so the website's /downloads
+# page can fetch the latest version without auth. A legacy copy is also
+# pushed to the public tap repo (aditya-ig10/homebrew-context-fence) so any
+# consumer still pointing there keeps working.
+#
+# WHY: the main repo (context-fence) is private — raw.githubusercontent.com
+# 404s for anonymous visitors, so the downloads page falls back to its static
+# copy. The releases repo is public and hosts BOTH platforms' assets (dmg +
+# exe) with changelogs, so the manifest must live there too.
+#
+# REQUIRES an Actions secret TAP_REPO_TOKEN in the context-fence repo:
+#   a PAT owned by aditya-ig10 with `repo` scope (covers every repo below).
+# The default GITHUB_TOKEN cannot push to a different repository.
+
+on:
+  workflow_run:
+    workflows: [windows-release, linux-release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync release.json to public releases + tap repos
+        env:
+          GH_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
+        run: |
+          CONTENT=$(base64 -w0 release.json)
+          for REPO in aditya-ig10/context-fence-releases aditya-ig10/homebrew-context-fence; do
+            SHA=$(gh api repos/$REPO/contents/release.json \
+              --jq .sha 2>/dev/null || true)
+            jq -n --arg c "$CONTENT" --arg s "$SHA" \
+              '{message: "chore: sync release manifest", content: $c} +
+               (if $s != "" then {sha: $s} else {} end)' \
+              | gh api --method PUT repos/$REPO/contents/release.json \
+                --input - \
+                --jq '.commit.sha'
+            echo "synced release.json -> $REPO"
+          done

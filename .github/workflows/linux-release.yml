@@ -1,0 +1,219 @@
+name: linux-release
+
+# Builds the Linux desktop app on a real Linux runner and publishes three
+# artifacts — AppImage, deb, rpm — to the PUBLIC releases repo
+# (aditya-ig10/context-fence-releases), then updates release.json (the
+# manifest the website /downloads page fetches) with a linux block.
+#
+# WHY ubuntu-22.04 (pinned, NOT ubuntu-latest):
+#   The runner's glibc becomes the AppImage's minimum runtime requirement.
+#   ubuntu-latest (24.04) ships glibc 2.39; an AppImage linked against it
+#   refuses to start on Debian 11 / Ubuntu 20.04-era distros. 22.04's older
+#   toolchain keeps the artifact runnable across a much wider install base.
+#
+# VERSION SANITIZATION (the one Linux-specific wrinkle):
+#   RPM forbids '-' inside the Version tag, but this project versions like
+#   1.1.9-b (letter-suffixed iterations). For the LINUX ARTIFACT NAMES ONLY
+#   the suffix is stripped (1.1.9-b -> Context-Fence-1.1.9-x64.AppImage /
+#   .deb / .rpm). release.json keeps the REAL full version (1.1.9-b) so the
+#   website, updater check and changelog stay consistent with mac/win.
+#
+# Trigger: manual (workflow_dispatch, with the release tag to publish under)
+# or a pushed v* tag. Assets are create-or-upload (--clobber) into the same
+# release the macOS dmg and Windows exe live in.
+# Requires the TAP_REPO_TOKEN secret (repo scope) — the default GITHUB_TOKEN
+# cannot push to a different repository.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish under (e.g. v1.1.9-b). Ignored when triggered by a v* tag push."
+        required: false
+        default: "v1.1.9-b"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # publishes the release assets + pushes the manifest commit
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # full history so the changelog fallback (`git log` between tags)
+          # has tags to diff against
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            electron/package-lock.json
+
+      - name: Backend build (tsc)
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Frontend build (vite)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Electron deps
+        working-directory: electron
+        run: npm ci
+
+      # Bash twin of prepare-backend.sh (which also copies backend/.mcp.json,
+      # a local-only file that does not exist in CI — the windows workflow
+      # omits it too). Stages compiled dist + prod deps, then rebuilds
+      # better-sqlite3 against the Electron ABI so require() works inside
+      # the packaged app (ELECTRON_RUN_AS_NODE).
+      - name: Stage backend (prod deps + Electron-ABI native rebuild)
+        run: |
+          set -euo pipefail
+          stage="$PWD/electron/staging/backend"
+          rm -rf "$stage"
+          mkdir -p "$stage"
+          cp -R backend/dist "$stage/dist"
+          cp -R backend/scripts "$stage/scripts"
+          cp backend/context-fence.yaml "$stage/"
+          cp backend/package.json "$stage/"
+          (
+            cd "$stage"
+            npm install --omit=dev --no-audit --no-fund
+          )
+          ev=$(node -p "require('$PWD/electron/node_modules/electron/package.json').version")
+          echo "Rebuilding better-sqlite3 for Electron ABI v$ev"
+          (
+            cd electron
+            npx @electron/rebuild --version "$ev" -f -w better-sqlite3 -m "$stage"
+          )
+          ls "$stage/node_modules/better-sqlite3/prebuilds" || true
+
+      # Strip the letter suffix from the packaged version for Linux artifact
+      # names only (see header comment). REAL_VERSION is captured first —
+      # the manifest step needs the unsanitized value.
+      - name: Sanitize package version for Linux artifacts
+        run: |
+          set -euo pipefail
+          REAL_VERSION=$(node -p "require('./electron/package.json').version")
+          BASE_VERSION="${REAL_VERSION%%-*}"
+          echo "REAL_VERSION=$REAL_VERSION" >> "$GITHUB_ENV"
+          echo "BASE_VERSION=$BASE_VERSION" >> "$GITHUB_ENV"
+          (cd electron && npm pkg set version="$BASE_VERSION")
+          echo "Packaging as $BASE_VERSION (manifest keeps $REAL_VERSION)"
+
+      - name: electron-builder Linux (AppImage + deb + rpm)
+        working-directory: electron
+        run: npx electron-builder --linux AppImage deb rpm
+
+      - name: List artifacts
+        run: |
+          for f in electron/release/*.AppImage electron/release/*.deb electron/release/*.rpm; do
+            [ -f "$f" ] || continue
+            echo "ARTIFACT: $f ($(du -h "$f" | cut -f1))"
+            sha256sum "$f"
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: context-fence-linux-x64
+          path: |
+            electron/release/*.AppImage
+            electron/release/*.deb
+            electron/release/*.rpm
+          if-no-files-found: error
+
+      # Publish into the SAME public release that holds the macOS dmg and
+      # Windows exe. Create-or-upload: reruns add/replace the assets instead
+      # of failing because the release already exists.
+      - name: Publish to public releases repo
+        env:
+          GH_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="${{ inputs.release_tag }}"
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+          APPIMAGE=$(ls electron/release/*.AppImage | head -1)
+          DEB=$(ls electron/release/*.deb | head -1)
+          RPM=$(ls electron/release/*.rpm | head -1)
+
+          VER_NO_V="${TAG#v}"
+          notesFile="electron/release/release-notes-$VER_NO_V.md"
+          if [ ! -f "$notesFile" ]; then
+            prev=$(git tag --sort=-creatordate | grep -F "$TAG" --line-number | head -1 >/dev/null 2>&1 \
+              && git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || git rev-parse HEAD~1)
+            {
+              echo "# Context Fence $TAG"
+              echo ""
+              echo "## Changelog"
+              git log --oneline --no-merges "${prev}..HEAD" | sed 's/^/- /'
+              echo ""
+              echo "## Downloads"
+            } > "$notesFile"
+          fi
+          {
+            echo ""
+            echo "- **Linux x64**: \`$(basename "$APPIMAGE")\`, \`$(basename "$DEB")\`, \`$(basename "$RPM")\` — sha256 \`$(sha256sum "$APPIMAGE" | awk '{print $1}')\` (AppImage)"
+          } >> "$notesFile"
+
+          gh release create "$TAG" "$APPIMAGE" "$DEB" "$RPM" \
+            --repo aditya-ig10/context-fence-releases \
+            --title "Context Fence $TAG (Linux x64)" \
+            --notes-file "$notesFile" \
+            || {
+              echo "Release already exists — uploading/updating assets instead"
+              gh release upload "$TAG" "$APPIMAGE" "$DEB" "$RPM" \
+                --repo aditya-ig10/context-fence-releases --clobber
+            }
+
+      # Bump the linux block of release.json on master — the website refetches
+      # it (ISR, ~2 min) and renders the Linux download cards from it. Same
+      # flow as windows-release.yml: fetch master explicitly (tag builds sit
+      # on a detached depth-limited HEAD), patch via the shared script,
+      # commit, push.
+      - name: Update release manifest
+        env:
+          GH_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch origin master
+          git checkout master
+
+          APPIMAGE=$(ls electron/release/*.AppImage | head -1)
+          HASH=$(sha256sum "$APPIMAGE" | awk '{print $1}')
+          SIZE=$(awk -v b="$(stat -c %s "$APPIMAGE")" 'BEGIN{printf "%.1f mb", b/1048576}')
+          URL="https://github.com/aditya-ig10/context-fence-releases/releases/download/${TAG}/$(basename "$APPIMAGE")"
+
+          export RELEASE_VERSION="$REAL_VERSION"
+          export RELEASE_DATE="$(date '+%b %-d, %Y' | tr 'A-Z' 'a-z')"
+          export LINUX_URL="$URL"
+          export LINUX_SHA256="$HASH"
+          export LINUX_SIZE="$SIZE"
+          export LINUX_LABEL="Linux · x64"
+          export LINUX_SUB="AppImage runs anywhere — chmod +x and launch, no install. Deb for Debian/Ubuntu, rpm for Fedora/RHEL."
+          export LINUX_UNSIGNED="unsigned · verify the sha256 after download"
+          node scripts/release-manifest.mjs
+
+          git add release.json
+          git commit -m "release: manifest adds linux assets ($TAG)"
+          git push origin master

@@ -1,0 +1,100 @@
+{
+  "name": "context-fence",
+  "productName": "Context Fence",
+  "version": "2.0.0",
+  "description": "Context Fence — MCP firewall desktop app",
+  "main": "main.js",
+  "private": true,
+  "author": "Context Fence",
+  "license": "MIT",
+  "homepage": "https://contextfence.dev",
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron .",
+    "dist": "electron-builder --mac",
+    "prepare:backend": "bash prepare-backend.sh"
+  },
+  "build": {
+    "appId": "app.contextfence.desktop",
+    "productName": "Context Fence",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "oauth-flow.js",
+      "updates.js",
+      "setup.html",
+      "setup.js",
+      "static-server.js",
+      "build/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "staging",
+        "to": "",
+        "filter": [
+          "**/*",
+          "backend/node_modules/**"
+        ]
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend-dist"
+      }
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "x64ArchFiles": "**/prebuilds/*.node"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon/master-1024.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Context-Fence-Setup-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "build/icon/master-1024.png",
+      "category": "Development",
+      "maintainer": "Context Fence <thecontextfence@gmail.com>",
+      "artifactName": "Context-Fence-${version}-${arch}.${ext}"
+    },
+    "npmRebuild": false,
+    "asar": true
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  }
+}

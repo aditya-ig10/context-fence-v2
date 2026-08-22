@@ -1,0 +1,178 @@
+name: windows-release
+
+# Builds the Windows NSIS installer on a real Windows runner.
+#
+# WHY WINDOWS-2022 (pinned, NOT windows-latest):
+#   - `windows-latest` currently images VS 2026 ("Microsoft Visual
+#     Studio\18\Enterprise"); node-gyp 11.5 cannot parse its version string
+#     (`unknown version "undefined"`) and its PowerShell probe also blows the
+#     stdio maxBuffer — so any source compile (better-sqlite3 has no prebuild
+#     for Node 22 ABI 127, hence node-gyp at npm ci) fails toolchain discovery
+#     and aborts the whole install (tsc never lands -> downstream failure).
+#   - windows-2022 ships VS2022 (17.x) which node-gyp handles fine.
+#
+# WHY A WINDOWS HOST AT ALL (not a mac cross-build):
+#   better-sqlite3 ships win32 prebuilds built for Node ABI 127, but Electron
+#   43.2.0 embeds Node 24.18.0 = ABI 148. `@electron/rebuild` must run on a
+#   Windows host (VS Build Tools + Python preinstalled here) so the packaged
+#   backend carries an ABI-148 win32-x64 binary. A mac-hosted build would
+#   produce an .exe that crashes at require('better-sqlite3').
+#
+# Trigger: manual (workflow_dispatch) or a pushed v* tag.
+# Artifact name matches the nsis.artifactName pattern in electron/package.json.
+# The exe is published to the PUBLIC windows repo
+# (aditya-ig10/context-fence-windows) so anyone can download it directly —
+# the main context-fence repo is private and 404s anonymous visitors.
+# Requires the TAP_REPO_TOKEN secret (repo scope, covers all repos).
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # tag-triggered runs publish the release with gh release create
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            electron/package-lock.json
+
+      - name: Backend build (tsc)
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Frontend build (vite)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Electron deps
+        working-directory: electron
+        run: npm ci
+
+      # Replicates prepare-backend.sh for PowerShell (no git-bash dependency).
+      - name: Stage backend (prod deps + Electron-ABI native rebuild)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = $PWD
+          $stage = Join-Path $root 'electron\staging\backend'
+          if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -Recurse $root\backend\dist $stage\dist
+          Copy-Item -Recurse $root\backend\scripts $stage\scripts
+          Copy-Item $root\backend\context-fence.yaml $stage\
+          Copy-Item $root\backend\package.json $stage\
+          Push-Location $stage
+          npm install --omit=dev --no-audit --no-fund
+          Pop-Location
+          $ev = (Get-Content (Join-Path $root 'electron\node_modules\electron\package.json') -Raw | ConvertFrom-Json).version
+          Write-Host "Rebuilding better-sqlite3 for Electron ABI v$ev"
+          Push-Location $root\electron
+          npx @electron/rebuild --version $ev -f -w better-sqlite3 -m $stage
+          Pop-Location
+          Get-ChildItem $stage\node_modules\better-sqlite3\prebuilds | Select-Object Name
+
+      - name: electron-builder NSIS (x64, per-user)
+        working-directory: electron
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis
+
+      - name: List artifacts
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse electron\release\*.exe | ForEach-Object {
+            Write-Host "ARTIFACT: $($_.FullName) ($([math]::Round($_.Length / 1MB, 1)) MB)"
+            Get-FileHash $_.FullName -Algorithm SHA256 | Select-Object Hash
+          }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: context-fence-windows-x64
+          path: electron/release/*.exe
+          if-no-files-found: error
+
+      # Tag-triggered builds also publish the release (Branch B:
+      # submission to Microsoft WDSI is a manual follow-up, see README).
+      # Published to the PUBLIC releases repo
+      # (aditya-ig10/context-fence-releases) — the single home for BOTH
+      # platforms' assets since v1.1.8-a; create-or-upload so reruns add the
+      # asset to an existing release.
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
+        run: |
+          $exe = Get-ChildItem electron\release\*.exe | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          $size = ("{0:N1} mb" -f ($exe.Length / 1MB))
+          # Changelog from git log since the previous tag (the dmg side of the
+          # release already created the notes file for the same tag — CI only
+          # adds the exe row to it; if the file is missing, build notes here).
+          $notesFile = "electron\release\release-notes-$($env:GITHUB_REF_NAME.TrimStart('v')).md"
+          if (-not (Test-Path $notesFile)) {
+            $prev = git tag --sort=-creatordate | Select-Object -First 2 | Select-Object -Last 1
+            if (-not $prev) { $prev = "HEAD~1" }
+            $log = git log --oneline --no-merges "$prev..HEAD" | ForEach-Object { "- $_" }
+            @("# Context Fence $env:GITHUB_REF_NAME", "", "## Changelog", $log, "", "## Downloads") |
+              Out-File -Encoding utf8 $notesFile
+          }
+          Add-Content -Encoding utf8 $notesFile "`n- **Windows x64**: ``$($exe.Name)`` — $size — sha256 ``$hash```n"
+          gh release create $env:GITHUB_REF_NAME $exe.FullName `
+            --repo aditya-ig10/context-fence-releases `
+            --title "Context Fence $env:GITHUB_REF_NAME (Windows x64)" `
+            --notes-file $notesFile
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Release already exists — uploading exe asset instead"
+            gh release upload $env:GITHUB_REF_NAME $exe.FullName --repo aditya-ig10/context-fence-releases --clobber
+          }
+
+      # Bumps release.json — the manifest the website reads for the latest
+      # version, sha256 and asset links (ISR, ~10 min refresh). Tag push alone
+      # therefore ships the release everywhere: exe, cask flow, and website.
+      # checkout leaves a detached HEAD on tags with a depth-1 clone, and the
+      # branch ref was never fetched — so fetch master explicitly first, then
+      # check it out so the manifest commit lands on the default branch.
+      - name: Update release manifest
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          git fetch origin master
+          git checkout master
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $exe = Get-ChildItem electron\release\*.exe | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          $size = ("{0:N1} mb" -f ($exe.Length / 1MB))
+          $url = "https://github.com/aditya-ig10/context-fence-releases/releases/download/$env:GITHUB_REF_NAME/$($exe.Name)"
+          $env:RELEASE_VERSION = $version
+          $env:RELEASE_DATE = (Get-Date).ToString("MMM d, yyyy").ToLowerInvariant()
+          $env:EXE_URL = $url
+          $env:EXE_SHA256 = $hash
+          $env:EXE_SIZE = $size
+          $env:EXE_UNSIGNED = "signed · Authenticode (developer cert) — SmartScreen may still prompt until reputation builds"
+          node scripts/release-manifest.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release.json
+          git commit -m "release: bump manifest to $env:GITHUB_REF_NAME"
+          git push origin master

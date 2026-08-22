@@ -1,0 +1,138 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    function isIncomingDocOwner() {
+      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ─── USER PROFILES ──────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['email'])
+        && request.resource.data.email is string;
+      allow update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Legacy per-user transaction subcollection
+    match /users/{userId}/transactions/{txId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update, delete: if false;
+    }
+
+    // ─── PAYMENTS & INVOICES ───────────────────────────────────────────────────
+    match /payments/{paymentId} {
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.email is string
+        && request.resource.data.plan is string;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ─── SUBSCRIPTIONS (Single Source of Truth) ───────────────────────────────
+    match /subscriptions/{userId} {
+      allow read: if isOwner(userId);
+      // Writes are performed by server-side Razorpay webhook or owner initializing tier
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    // ─── CLOUD BACKUP TABLES FOR PAID USERS ────────────────────────────────────
+
+    // 1. Full system snapshot backups
+    match /cloud_backups/{backupId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.backupVersion is string
+        && request.resource.data.timestamp is string;
+      allow update: if isDocOwner() && isIncomingDocOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // 2. Exported firewall policies & rules
+    match /cloud_policies/{policyId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.ruleName is string;
+      allow update: if isDocOwner() && isIncomingDocOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // 3. Agent configuration & connector protection states
+    match /cloud_agent_configs/{configId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.agentType is string;
+      allow update: if isDocOwner() && isIncomingDocOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // 4. Cloud audit logs & forensic event logs (append-only for audit integrity)
+    match /cloud_audit_logs/{logId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.timestamp is string
+        && request.resource.data.verdict is string;
+      allow update, delete: if false;
+    }
+
+    // 5. Distributed fleet node registrations & health telemetry
+    match /cloud_fleet_nodes/{nodeId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.nodeId is string;
+      allow update: if isDocOwner() && isIncomingDocOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // 6. Policy change approvals & sign-offs
+    match /change_approvals/{approvalId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.title is string;
+      allow update: if isDocOwner() && isIncomingDocOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // 7. Compliance reports & evidence packs
+    match /compliance_reports/{reportId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.framework is string;
+      allow update: if isDocOwner() && isIncomingDocOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // 8. Incident replays & forensic traces
+    match /incident_replays/{incidentId} {
+      allow read: if isDocOwner();
+      allow create: if isIncomingDocOwner()
+        && request.resource.data.incidentId is string;
+      allow update: if isDocOwner() && isIncomingDocOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // ─── DEFAULT DENY ──────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
