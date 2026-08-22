@@ -1,6 +1,6 @@
 # MCP Firewall (Context Fence)
 
-**v1.0.0-beta** — local-first, notify-only update checks, realtime policy enforcement.
+**v1.2.0-v2-alpha** — local-first, notify-only update checks, realtime policy enforcement.
 
 A **local-first security control plane for AI coding agents**. MCP Firewall sits between AI agents (Claude Desktop / Claude Code, Cursor, OpenCode, Codex, GitHub Copilot, Cline, Continue, Windsurf, Aider) and their MCP servers, intercepting every tool call so it can be **policy-checked, logged, and blocked or allowed** — with a full dashboard for monitoring what your agents actually do.
 
@@ -25,7 +25,7 @@ AI Agent ──mcp──▶ MCP Firewall Proxy (:3001) ──mcp──▶ MCP Se
 
 ## Install
 
-Latest release: **v1.0.0-beta** — [macOS](#macos-homebrew-recommended) · [Windows](#windows-installer)
+Latest release: **v1.2.0-v2-alpha** — [macOS](#macos-homebrew-recommended) · [Windows](#windows-installer)
 
 ### macOS (Homebrew — recommended)
 
