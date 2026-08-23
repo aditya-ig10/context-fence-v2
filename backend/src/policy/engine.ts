@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import yaml from 'js-yaml';
+import { loadPolicyFromDisk } from './loader.js';
 import db from '../db/index.js';
 import { getMergedPolicies } from '../routes/policies.js';
 
