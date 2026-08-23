@@ -34,6 +34,7 @@ import firewallRouter from './routes/firewall.js';
 import serversRouter from './routes/servers.js';
 import protectRouter from './routes/protect.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -46,7 +47,8 @@ loadPolicy(policyDir);
 
 const app = express();
 
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: '*' }))
+app.use(rateLimiter);
 app.use(express.json({ limit: '10mb' }));
 
 // API routes
