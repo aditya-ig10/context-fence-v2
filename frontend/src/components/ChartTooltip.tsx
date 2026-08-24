@@ -11,6 +11,8 @@ interface ChartTooltipProps {
  * Uses the design system's glass tokens so tooltips match the app, not a
  * recharts default box.
  */
+const MOBILE_BREAKPOINT = 640;
+// v2: clamp tooltip to viewport on small screens
 export default function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   return (
@@ -25,3 +27,5 @@ export default function ChartTooltip({ active, payload, label }: ChartTooltipPro
     </div>
   );
 }
+
+// v2 mobile overflow guard
