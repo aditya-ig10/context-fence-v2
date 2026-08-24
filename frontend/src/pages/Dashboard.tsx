@@ -127,6 +127,11 @@ function pctDelta(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
+function HealthSparkline({ data }: { data: number[] }) {
+  if (!data.length) return null;
+  const max = Math.max(...data, 1);
+  return <svg width="60" height="24" viewBox="0 0 60 24">{data.map((v,i)=> <circle key={i} cx={i*12} cy={24 - (v/max)*20} r="2" fill="var(--accent-teal)" />)}</svg>;
+}
 function DecisionText({ decision }: { decision: string }) {
   const color = decision === 'allow' ? C.teal : decision === 'deny' ? C.orange : C.amber;
   const label = decision === 'allow' ? 'Allowed' : decision === 'deny' ? 'Blocked' : 'Logged';
