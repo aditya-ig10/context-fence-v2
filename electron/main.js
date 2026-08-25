@@ -164,6 +164,7 @@ function killBackendTree(signal = 'SIGTERM') {
   }
 }
 
+let backendRetries = 0;
 async function startBackend() {
   if (backendChild && backendChild.exitCode === null) return true;
   backendPort = DEV ? DEV_BACKEND_PORT : await pickFreePort();
@@ -181,7 +182,12 @@ async function startBackend() {
     process.stdout.write(`[backend] exited code=${code} sig=${sig}\n`);
     if (setupPhase === 'backend-up') setupPhase = null;
   });
-  const ok = await waitForHealth();
+  let ok = await waitForHealth();
+  if (!ok && backendRetries < 2) {
+    backendRetries++;
+    await new Promise(r=> setTimeout(r, 800*backendRetries));
+    ok = await waitForHealth();
+  }
   if (!ok) {
     killBackendTree('SIGKILL');
     throw new Error('backend did not reach /api/health in time');
