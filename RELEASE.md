@@ -162,3 +162,8 @@ brew install --cask context-fence
 ```
 
 Note: `brew upgrade` will not reinstall a same-version cask — after a rollback the bumped tag is gone, so downgrades always go through the untap/tap flow above.
+
+
+## v2 Release Notes (2026-08-25)
+- New bundle id `app.contextfence.v2.desktop` for side-by-side install
+- Auto-update interval now configurable via `CF_UPDATE_INTERVAL_MS`
