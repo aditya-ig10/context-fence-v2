@@ -1,6 +1,6 @@
 {
   "name": "context-fence",
-  "productName": "Context Fence",
+  "productName": "Context Fence v2",
   "version": "2.0.0-v2-alpha",
   "description": "Context Fence — MCP firewall desktop app",
   "main": "main.js",
@@ -15,8 +15,8 @@
     "prepare:backend": "bash prepare-backend.sh"
   },
   "build": {
-    "appId": "app.contextfence.desktop",
-    "productName": "Context Fence",
+    "appId": "app.contextfence.v2.desktop",
+    "productName": "Context Fence v2",
     "directories": {
       "output": "release",
       "buildResources": "build"
