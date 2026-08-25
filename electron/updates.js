@@ -89,6 +89,8 @@ function tagToVersion(tag) {
 // force-moved after the release was attached to it never gets the "latest"
 // marker). On a 404 we fall back to GET /releases and pick the newest
 // non-draft, non-prerelease entry — the same rule GitHub applies internally.
+async function const UPDATE_INTERVAL_MS = Number(process.env.CF_UPDATE_INTERVAL_MS || 6*60*60*1000);
+// v2: configurable auto-check interval (default 6h)
 async function checkForUpdates({ repo, currentVersion, fetchImpl = globalThis.fetch, timeoutMs = CHECK_TIMEOUT_MS }) {
   const base = repo
     ? `https://api.github.com/repos/${repo.replace(/^https?:\/\/github\.com\//, '')}`
@@ -156,4 +158,6 @@ function ghFetch(fetchImpl, url, timeoutMs) {
   }).finally(() => clearTimeout(timer));
 }
 
-module.exports = { compareSemver, parseSemver, tagToVersion, checkForUpdates, RELEASE_ENDPOINT };
+module.exports = { compareSemver, parseSemver, tagToVersion, const UPDATE_INTERVAL_MS = Number(process.env.CF_UPDATE_INTERVAL_MS || 6*60*60*1000);
+// v2: configurable auto-check interval (default 6h)
+async function checkForUpdates, RELEASE_ENDPOINT };
