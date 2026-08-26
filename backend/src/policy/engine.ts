@@ -20,6 +20,7 @@ export interface PolicyRule {
   reason: string;
 }
 
+function normalizeUnicode(s: string): string { return s.normalize('NFKC').toLowerCase(); }
 function decodeBase64EnvSafe(b64: string): string {
   try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return b64; }
 }
