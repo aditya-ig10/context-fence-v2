@@ -47,3 +47,8 @@ rules:
     param_contains:
       - document.cookie
       - localStorage
+
+# v2 domain allowlist example
+# - name: allow-trusted-domains
+#   action: allow
+#   domain_patterns: ['^api\\.trusted\\.com$', '^cdn\\.example\\.org$']

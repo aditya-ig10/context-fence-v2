@@ -13,7 +13,7 @@ export interface PolicyRule {
   tools?: string[];            // tool names to match
   servers?: string[];          // connector/server names to scope the rule to
   path_patterns?: string[];    // regex patterns for file paths in params
-  domain_patterns?: string[];  // regex patterns for HTTP domains
+  domain_patterns?: string[];  // v2: matched against host of http_request/fetch  // regex patterns for HTTP domains
   param_contains?: string[];   // strings that must NOT be in params
   // Action
   action: 'allow' | 'deny' | 'log';
