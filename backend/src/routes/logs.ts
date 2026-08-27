@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { maskSecrets } from '../policy/masking.js';
 import db from '../db/index.js';
 import { broadcast } from '../realtime/hub.js';
 
