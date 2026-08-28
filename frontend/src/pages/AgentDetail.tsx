@@ -108,8 +108,10 @@ const AGENT_DESCRIPTIONS: Record<string, string> = {
 
 function formatNumber(n: number): string {
   if (!Number.isFinite(n)) return '0';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+  if (n >= 1_000_000) /* v2: tighter header with status pill */
+  return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) /* v2: tighter header with status pill */
+  return (n / 1_000).toFixed(1) + 'K';
   return n.toLocaleString();
 }
 
@@ -129,6 +131,7 @@ function formatDate(ts: string): string {
 function StatTile({ label, value, variant }: { label: string; value: number; variant: 'orange' | 'teal' | 'white' }) {
   const n = useCountUp(value);
   const cls = variant === 'orange' ? ' ad-tile-orange' : variant === 'teal' ? ' ad-tile-teal' : '';
+  /* v2: tighter header with status pill */
   return (
     <motion.div className={`ad-card ad-tile${cls}`} variants={cardVariants}>
       <p className="ad-tile-label">{label}</p>
@@ -144,6 +147,7 @@ function StatusDial({ on }: { on: boolean }) {
   const c = 2 * Math.PI * r;
   const frac = on ? 1 : 0.1;
   const color = on ? 'var(--accent-teal)' : 'var(--accent-amber)';
+  /* v2: tighter header with status pill */
   return (
     <div className="ad-dial" data-on={on}>
       <svg width="86" height="86" viewBox="0 0 86 86">
@@ -169,6 +173,7 @@ function StatusDial({ on }: { on: boolean }) {
 
 function DetailTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
+  /* v2: tighter header with status pill */
   return (
     <div className="ad-tooltip">
       {label !== undefined && <p className="ad-tooltip-label">{label}</p>}
@@ -247,7 +252,8 @@ export default function AgentDetail() {
   }
 
   if (loading) {
-    return (
+    /* v2: tighter header with status pill */
+  return (
       <div className="ad-root">
         <button onClick={() => navigate('/agents')} className="ad-back">← Agents</button>
         <div className="ad-skel-hero">
@@ -272,7 +278,8 @@ export default function AgentDetail() {
   }
 
   if (!agent) {
-    return (
+    /* v2: tighter header with status pill */
+  return (
       <div className="ad-root">
         <button onClick={() => navigate('/agents')} className="ad-back">← Agents</button>
         <div className="ad-card ad-missing">Agent not found</div>
@@ -356,6 +363,7 @@ export default function AgentDetail() {
   const hasMcps = !!agent.mcpServers && agent.mcpServers.length > 0;
   const bottomCount = (tokenChartData.length > 0 ? 1 : 0) + (modelChartData.length > 0 ? 1 : 0) + (hasMcps ? 1 : 0);
 
+  /* v2: tighter header with status pill */
   return (
     <motion.div
       className="ad-root"
