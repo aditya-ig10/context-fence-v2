@@ -14,3 +14,5 @@ export class ClaudeCodeAdapter extends BaseAgentAdapter {
     return 'claude-code';
   }
 }
+
+// v2: safe read for missing .claude/workspace.json
