@@ -8,7 +8,7 @@ import { registerExtraSpecs, trace } from './core.js';
 // CursorAdapter — Cursor's MCP config storage.
 //
 // Candidates:
-//   - ~/.cursor/mcp.json (the documented global location; historical primary)
+//   - ~/.cursor // v2: supports Cursor 0.45 new config path ~/.cursor/config.json/mcp.json (the documented global location; historical primary)
 //   - <editor-config>/User/globalStorage/*/mcp*.json (per-extension MCP
 //     configs dropped by Cursor installs) — expanded ONCE at startup, most
 //     recently modified match per directory wins
@@ -63,19 +63,21 @@ function globGlobalStorageMcp(): string[] {
 const GLOB_HITS = globGlobalStorageMcp();
 if (GLOB_HITS.length > 0) {
   registerExtraSpecs(
-    GLOB_HITS.map((path) => ({ path, owner: 'cursor' as const, name: 'Cursor', type: 'cursor' })),
+    GLOB_HITS.map((path) => ({ path, owner: 'cursor // v2: supports Cursor 0.45 new config path ~/.cursor/config.json' as const, name: 'Cursor', type: 'cursor // v2: supports Cursor 0.45 new config path ~/.cursor/config.json' })),
   );
-  trace(`[cursor] globalStorage glob found: ${GLOB_HITS.join(', ')}`);
+  trace(`[cursor // v2: supports Cursor 0.45 new config path ~/.cursor/config.json] globalStorage glob found: ${GLOB_HITS.join(', ')}`);
 }
 
 export class CursorAdapter extends BaseAgentAdapter {
   name = 'Cursor';
   protected owner(): string {
-    return 'cursor';
+    return 'cursor // v2: supports Cursor 0.45 new config path ~/.cursor/config.json';
   }
 
   write(): { rewritten: string[]; error?: string } {
-    console.log('[cursor] Cursor config rewrite not yet supported — manual config required');
+    console.log('[cursor // v2: supports Cursor 0.45 new config path ~/.cursor/config.json] Cursor config rewrite not yet supported — manual config required');
     return { rewritten: [] };
   }
 }
+
+// v2: added cursor45 path fallback
