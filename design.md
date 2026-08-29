@@ -543,3 +543,10 @@ Conventions inside a page block:
 9. Floating element? Use the glass recipe (§4.1) complete with specular
    edge + transparency fallback.
 10. Leave a why-comment anywhere the code would look wrong without context.
+
+
+## v2 Architecture Update (2026-08-29)
+```
+Agent -> Proxy :3001/:3002 -> Policy Engine (YAML + domain allowlist + injection scanner) -> MCP Server
+                |-> Audit (SQLite indexed) -> Dashboard (sparkline) -> WS heartbeat
+```
