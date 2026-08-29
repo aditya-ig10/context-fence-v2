@@ -49,8 +49,9 @@ export function attachRealtimeHub(server: Server): void {
 }
 
 const HEARTBEAT_MS = 25000;
-setInterval(()=>{ try{ broadcast({ type:'ping', ts:Date.now() }); }catch{} }, HEARTBEAT_MS);
+setInterval(()=>{ try{ broadcast({ type:'ping' // v2 de-duped, ts:Date.now() }); }catch{} }, HEARTBEAT_MS);
 
+let lastPolicyHash='';
 export function broadcast(type: EventType, payload: Record<string, unknown>): void {
   if (!wss || wss.clients.size === 0) return;
   const frame = JSON.stringify({ type, payload, ts: Date.now() });
