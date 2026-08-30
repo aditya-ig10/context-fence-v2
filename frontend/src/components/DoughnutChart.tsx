@@ -72,3 +72,5 @@ export default function DoughnutChart({
     </div>
   );
 }
+
+// v2: guard empty donut total
