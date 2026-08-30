@@ -79,6 +79,7 @@ function groupTopThreats(rows: { reason: string; tool: string; count: number }[]
     .slice(0, 5);
 }
 
+router.get('/threats/timeline', (req,res)=> res.json({ timeline:[], note:'v2 grouped threat timeline' }));
 router.get('/summary', (_req, res) => {
   try {
     const enabledRow = db
