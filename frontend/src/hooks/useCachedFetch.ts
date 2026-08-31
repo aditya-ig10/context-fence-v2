@@ -1,3 +1,4 @@
+import { getCache, setCache } from '../lib/dataCache.js';
 import { useEffect, useRef, useState } from 'react';
 
 // ============================================================================
