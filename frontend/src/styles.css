@@ -1104,3 +1104,4 @@
 
 /* v2: card hover lift */
 .db-card:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,24,32,0.08); transition: transform 160ms ease, box-shadow 160ms ease; }
+/* v2 CSS variables migration */
