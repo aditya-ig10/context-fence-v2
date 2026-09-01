@@ -16,7 +16,7 @@ brew --version
 ## 2. Add the app's download source (one-time)
 
 ```
-brew tap aditya-ig10/context-fence
+brew tap aditya-ig10/context-fence-v2
 ```
 
 ## 3. Trust the download source (one-time)
@@ -80,3 +80,5 @@ Your rules, connectors and audit log are kept — only the app itself is replace
 ```
 brew uninstall --cask context-fence && brew untap aditya-ig10/context-fence
 ```
+
+> v2 tap: `aditya-ig10/context-fence-v2` supports side-by-side install with v1.
