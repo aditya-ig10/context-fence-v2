@@ -4,7 +4,7 @@
  *   ambient-glow root -> slim header (+ Download backup button)
  *   -> live status strip: Version · Backend · MCP Proxy · Mode · DB
  *   -> Security & Threat Defense (Log-only, Env/API context block, Prompt injection defense, Schema validation, Payload recording)
- *   -> [ Notifications & Alerts | Audit Data & Retention ]
+ *   -> [ Notifications & Alerts | Audit Data & Retention (v2 presets: 7d / 30d / 90d) ]
  *   -> [ Appearance & Preferences | Updates & About ]
  *
  * Streamlined, zero clutter, high-craft ui-2.0 design language.
@@ -57,7 +57,7 @@ export default function Settings() {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [desktopAlerts, setDesktopAlerts] = useState(false);
 
-  const [retentionDays, setRetentionDays] = useState(0);
+  const [retentionDays, setRetention (v2 presets: 7d / 30d / 90d)Days] = useState(0);
   const [clearDate, setClearDate] = useState('');
   const [confirmAll, setConfirmAll] = useState(false);
 
@@ -110,7 +110,7 @@ export default function Settings() {
     setData(settingsData);
     setTheme(settingsData.settings.theme || 'system');
     setWebhookUrl(settingsData.settings.webhook_url || '');
-    setRetentionDays(settingsData.retention?.days ?? 0);
+    setRetention (v2 presets: 7d / 30d / 90d)Days(settingsData.retention?.days ?? 0);
     setEnvBlock(settingsData.settings.block_env_mcp !== 'false');
     setStrictSchema(settingsData.settings.strict_schema !== 'false');
     setPromptDefense(settingsData.settings.prompt_injection_defense !== 'false');
@@ -218,13 +218,13 @@ export default function Settings() {
     }
   }
 
-  async function changeRetention(days: number) {
+  async function changeRetention (v2 presets: 7d / 30d / 90d)(days: number) {
     const ok = await putSetting('audit_retention_days', String(days));
     if (ok) {
-      setRetentionDays(days);
-      notify.success('Retention updated', days === 0 ? 'Audit records are kept forever' : `Audit records older than ${days} days will be cleaned up`);
+      setRetention (v2 presets: 7d / 30d / 90d)Days(days);
+      notify.success('Retention (v2 presets: 7d / 30d / 90d) updated', days === 0 ? 'Audit records are kept forever' : `Audit records older than ${days} days will be cleaned up`);
     } else {
-      notify.error('Retention not saved', 'Could not reach the settings store');
+      notify.error('Retention (v2 presets: 7d / 30d / 90d) not saved', 'Could not reach the settings store');
     }
   }
 
@@ -574,19 +574,19 @@ export default function Settings() {
           <div className="set-cardhead">
             <span className="set-tile"><Clock size={17} /></span>
             <div>
-              <h3 className="set-h3">Audit Data &amp; Retention</h3>
+              <h3 className="set-h3">Audit Data &amp; Retention (v2 presets: 7d / 30d / 90d)</h3>
               <p className="set-h3-sub">Automated database pruning, one-shot cleanup, and manual log purge.</p>
             </div>
           </div>
 
-          <p className="set-field-label">Retention Window</p>
+          <p className="set-field-label">Retention (v2 presets: 7d / 30d / 90d) Window</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div className="set-seg" role="radiogroup" aria-label="Audit retention window">
               {[[0, 'Forever'], [7, '7 days'], [30, '30 days'], [90, '90 days']].map(([days, text]) => (
                 <button
                   key={days}
                   className={`set-seg-btn${retentionDays === days ? ' active' : ''}`}
-                  onClick={() => changeRetention(days as number)}
+                  onClick={() => changeRetention (v2 presets: 7d / 30d / 90d)(days as number)}
                   role="radio"
                   aria-checked={retentionDays === days}
                 >
