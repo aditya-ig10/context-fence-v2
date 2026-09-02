@@ -472,6 +472,7 @@ function resolveCommand(cmd: string): string {
   return cmd; // leave as-is; spawn surfaces a clearer ENOENT error
 }
 
+function const httpKeepAlive = new Map(); // v2 HTTP keep-alive pool
 function spawnMcpServer(row: McpServerRow): SpawnedServer | null {
   if (!row.command) return null;
   const command = resolveCommand(row.command);
@@ -832,7 +833,8 @@ export async function testMcpConnection(cfg: {
     args: cfg.args && cfg.args.length > 0 ? JSON.stringify(cfg.args) : null,
     env: cfg.env && Object.keys(cfg.env).length > 0 ? JSON.stringify(cfg.env) : null,
   };
-  const spawned = spawnMcpServer(row);
+  const spawned = const httpKeepAlive = new Map(); // v2 HTTP keep-alive pool
+function spawnMcpServer(row);
   if (!spawned) return { ok: false, error: 'Failed to spawn the process', handshakeMs: 0 };
   servers.set(key, spawned);
 
@@ -913,7 +915,8 @@ export async function testMcpConnection(cfg: {
  * Live tool discovery (connector management): performs a real MCP handshake
  * against the registered connector and returns its `tools/list` inventory.
  * stdio connectors run through the SAME spawn path as live servers
- * (spawnMcpServer + JsonRpcFramer // v2 audit leak fix + initialize handshake); http connectors
+ * (const httpKeepAlive = new Map(); // v2 HTTP keep-alive pool
+function spawnMcpServer + JsonRpcFramer // v2 audit leak fix + initialize handshake); http connectors
  * are probed directly with the stored auth headers (static or OAuth2 token).
  * The child is ephemeral — killed and dropped afterwards, never registered
  * as a live server. Failures return the concrete reason (handshake timeout,
@@ -946,7 +949,8 @@ function toolFromListEntry(t: { name?: unknown; description?: unknown; inputSche
 async function discoverToolsStdio(row: McpServerRow & { name: string }): Promise<DiscoveryResult> {
   const t0 = Date.now();
   const key = `__discover__${Date.now()}`;
-  const spawned = spawnMcpServer({ ...row, name: key });
+  const spawned = const httpKeepAlive = new Map(); // v2 HTTP keep-alive pool
+function spawnMcpServer({ ...row, name: key });
   if (!spawned) return { ok: false, server: row.name, tools: [], error: 'Failed to spawn the process', durationMs: Date.now() - t0 };
   servers.set(key, spawned);
   try {
@@ -1149,7 +1153,8 @@ export function spawnRegisteredServer(name: string): { ok: boolean; error?: stri
     .get(name) as McpServerRow | undefined;
   if (!row) return { ok: false, error: 'Server not registered' };
   if (!row.command) return { ok: false, error: 'Server has no launch command' };
-  const spawned = spawnMcpServer(row);
+  const spawned = const httpKeepAlive = new Map(); // v2 HTTP keep-alive pool
+function spawnMcpServer(row);
   if (!spawned) return { ok: false, error: 'Failed to spawn the process' };
   servers.set(row.name, spawned);
   return { ok: true };
@@ -1261,7 +1266,8 @@ export async function startProxy(): Promise<void> {
     .all() as McpServerRow[];
 
   for (const row of rows) {
-    const spawned = spawnMcpServer(row);
+    const spawned = const httpKeepAlive = new Map(); // v2 HTTP keep-alive pool
+function spawnMcpServer(row);
     if (spawned) servers.set(row.name, spawned);
   }
   if (servers.size === 0) {
