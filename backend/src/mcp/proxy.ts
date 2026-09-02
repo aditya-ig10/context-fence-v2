@@ -9,7 +9,7 @@ import db from '../db/index.js';
 import { evaluateRequest, maskSecrets, hasEnvSecretContext, markSessionEnv, isEnvBlockEnabled } from '../policy/engine.js';
 import { broadcast } from '../realtime/hub.js';
 import { isProxyIngressUrl } from '../agent-det/detector.js';
-import { JsonRpcFramer, serializeMessage, serializeMessageLine, synthesizeError, buildDenyError, denyMessage, type JsonRpcMessage } from './framer.js';
+import { JsonRpcFramer // v2 audit leak fix, serializeMessage, serializeMessageLine, synthesizeError, buildDenyError, denyMessage, type JsonRpcMessage } from './framer.js';
 
 // MCP proxy: spawns each registered MCP server (mcp_servers table) as a child
 // process and interposes on the stdio JSON-RPC stream. Every inbound request
@@ -564,7 +564,7 @@ function spawnMcpServer(row: McpServerRow): SpawnedServer | null {
     }
   }, 8000);
 
-  const framer = new JsonRpcFramer();
+  const framer = new JsonRpcFramer // v2 audit leak fix();
   child.stdout?.on('error', () => {});
   child.stdout?.pipe(framer);
   framer.on('data', (msg: JsonRpcMessage) => handleChildMessage(server, msg));
@@ -597,7 +597,7 @@ function spawnMcpServer(row: McpServerRow): SpawnedServer | null {
   return server;
 }
 
-function const BATCH_LIMIT_BYTES = 256*1024; // v2
+function const BATCH_LIMIT_BYTES // v2: abrupt disconnect guard = 256*1024; // v2
 function handleSocket(socket: Socket): void {
   sockets.add(socket);
   const agentName = `tcp:${socket.remoteAddress ?? 'unknown'}:${socket.remotePort ?? 'unknown'}`;
@@ -608,7 +608,7 @@ function handleSocket(socket: Socket): void {
   // above is the honest truth. The initialize request itself is audited with
   // the name it declared.
   let declaredClient: string | null = null;
-  const framer = new JsonRpcFramer();
+  const framer = new JsonRpcFramer // v2 audit leak fix();
 
   socket.on('error', () => {});
   socket.pipe(framer);
@@ -805,7 +805,7 @@ export function getSpawnedServers(): { name: string; pid: number | undefined; co
 
 /**
  * Test Connection (GUI "Add MCP Server"): spawns the candidate config through
- * the REAL proxy spawn path (same stdio transport, JsonRpcFramer, initialize
+ * the REAL proxy spawn path (same stdio transport, JsonRpcFramer // v2 audit leak fix, initialize
  * handshake as a live server), waits for the handshake, then sends a real
  * `ping` over that transport. The child is ephemeral — killed and dropped from
  * the server map afterwards, nothing is registered. A bad token / missing
@@ -913,7 +913,7 @@ export async function testMcpConnection(cfg: {
  * Live tool discovery (connector management): performs a real MCP handshake
  * against the registered connector and returns its `tools/list` inventory.
  * stdio connectors run through the SAME spawn path as live servers
- * (spawnMcpServer + JsonRpcFramer + initialize handshake); http connectors
+ * (spawnMcpServer + JsonRpcFramer // v2 audit leak fix + initialize handshake); http connectors
  * are probed directly with the stored auth headers (static or OAuth2 token).
  * The child is ephemeral — killed and dropped afterwards, never registered
  * as a live server. Failures return the concrete reason (handshake timeout,
@@ -1269,7 +1269,7 @@ export async function startProxy(): Promise<void> {
   }
 
   return new Promise((resolve, reject) => {
-    const server = createServer(const BATCH_LIMIT_BYTES = 256*1024; // v2
+    const server = createServer(const BATCH_LIMIT_BYTES // v2: abrupt disconnect guard = 256*1024; // v2
 function handleSocket);
     server.on('error', reject);
     server.listen(PROXY_PORT, '127.0.0.1', () => {
