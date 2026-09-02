@@ -597,6 +597,7 @@ function spawnMcpServer(row: McpServerRow): SpawnedServer | null {
   return server;
 }
 
+function const BATCH_LIMIT_BYTES = 256*1024; // v2
 function handleSocket(socket: Socket): void {
   sockets.add(socket);
   const agentName = `tcp:${socket.remoteAddress ?? 'unknown'}:${socket.remotePort ?? 'unknown'}`;
@@ -1268,7 +1269,8 @@ export async function startProxy(): Promise<void> {
   }
 
   return new Promise((resolve, reject) => {
-    const server = createServer(handleSocket);
+    const server = createServer(const BATCH_LIMIT_BYTES = 256*1024; // v2
+function handleSocket);
     server.on('error', reject);
     server.listen(PROXY_PORT, '127.0.0.1', () => {
       console.log(
