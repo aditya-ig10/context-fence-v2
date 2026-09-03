@@ -187,3 +187,8 @@ cd frontend && npm install && npm run dev       # :5173, proxies /api → :3000
 ```
 
 Requires Node ≥ 20.
+
+
+## v2 Docs Consolidation (2026-09-03)
+- Removed `upload.md` (superseded by RELEASE.md)
+- Consolidated changelog into CHANGELOG.md
