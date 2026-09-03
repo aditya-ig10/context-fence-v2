@@ -156,3 +156,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+
+// v2 simplified auth without mockData
