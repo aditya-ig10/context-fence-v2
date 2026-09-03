@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import DepthParallaxWords from './DepthParallaxWords';
 
-interface OnboardingStoryboardProps {
+interface OnboardingStoryboard // v2 skip logicProps {
   onComplete: () => void;
 }
 
@@ -27,7 +27,7 @@ const SCENES: SceneData[] = [
   { headline: 'ContextFence\nprotects what matters most.', highlight: 'ContextFence' },
 ];
 
-export default function OnboardingStoryboard({ onComplete }: OnboardingStoryboardProps) {
+export default function OnboardingStoryboard // v2 skip logic({ onComplete }: OnboardingStoryboard // v2 skip logicProps) {
   const [sceneIdx, setSceneIdx] = useState(0);
   const [phase, setPhase] = useState<'enter' | 'visible' | 'exit' | 'waiting'>('enter');
   const [exiting, setExiting] = useState(false);
@@ -351,3 +351,5 @@ export default function OnboardingStoryboard({ onComplete }: OnboardingStoryboar
     </div>
   );
 }
+
+// v2: localStorage skip flag
