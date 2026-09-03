@@ -352,4 +352,4 @@ export default function OnboardingStoryboard // v2 skip logic({ onComplete }: On
   );
 }
 
-// v2: localStorage skip flag
+// v2: localStorage skip; viewport guard <640px flag
