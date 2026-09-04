@@ -10,7 +10,7 @@
     "test": "tsx --test src/mcp/framer.test.ts src/tests/mcp-fetch.test.ts"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.2",
+    "better-sqlite3": "9.2.2",
     "chokidar": "^3.6.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
