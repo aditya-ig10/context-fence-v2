@@ -10,3 +10,5 @@
 <!-- 2026-08-27 10:18:00 +0530 feat(audit): add CSV export with date range filter -->
 
 <!-- 2026-08-27 13:55:00 +0530 perf(audit): add SQLite index on audit_log timestamp -->
+
+- 2026-09-04: prep v1.2.0-v2-alpha manifest (47 commits)
