@@ -1,6 +1,6 @@
 # MCP Firewall (Context Fence)
 
-**v1.2.0-v2-alpha** — local-first, notify-only update checks, realtime policy enforcement.
+**v2.0.0** — local-first, notify-only update checks, realtime policy enforcement.
 
 A **local-first security control plane for AI coding agents**. MCP Firewall sits between AI agents (Claude Desktop / Claude Code, Cursor, OpenCode, Codex, GitHub Copilot, Cline, Continue, Windsurf, Aider) and their MCP servers, intercepting every tool call so it can be **policy-checked, logged, and blocked or allowed** — with a full dashboard for monitoring what your agents actually do.
 
@@ -25,7 +25,7 @@ AI Agent ──mcp──▶ MCP Firewall Proxy (:3001) ──mcp──▶ MCP Se
 
 ## Install
 
-Latest release: **v1.2.0-v2-alpha** — [macOS](#macos-homebrew-recommended) · [Windows](#windows-installer)
+Latest release: **v2.0.0** — [Download from contextfence.dev/downloads](https://contextfence.dev/downloads) · [macOS](#macos-homebrew-recommended) · [Windows](#windows-installer)
 
 ### macOS (Homebrew — recommended)
 
@@ -39,7 +39,7 @@ The app is ad-hoc signed, so the cask clears the quarantine flag on install; no 
 
 ### Windows (installer)
 
-1. Download `Context-Fence-Setup-1.0.0-beta-x64.exe` from the [releases page](https://github.com/aditya-ig10/context-fence/releases/latest).
+1. Download `Context-Fence-Setup-2.0.0-x64.exe` from [contextfence.dev/downloads](https://contextfence.dev/downloads).
 2. Run it. The installer is **unsigned**, so SmartScreen shows a blue prompt — click **More info → Run anyway**.
 3. Per-user install: no admin rights needed; you choose the install directory.
 
@@ -52,7 +52,7 @@ The app is ad-hoc signed, so the cask clears the quarantine flag on install; no 
   brew upgrade --cask context-fence
   ```
   *(If Homebrew doesn't see the new version immediately, run `brew update` to refresh the tap, or `brew reinstall --cask context-fence` to force a redownload).*
-- **Windows**: download the new installer from the [releases page](https://github.com/aditya-ig10/context-fence/releases/latest) and run it.
+- **Windows**: download the new installer from [contextfence.dev/downloads](https://contextfence.dev/downloads) and run it.
 - Your data (audit log, policies, connectors, agent registrations) lives in the app's data folder and is **kept on upgrade** — both installers set `deleteAppDataOnUninstall: false`.
 
 ## Uninstalling
